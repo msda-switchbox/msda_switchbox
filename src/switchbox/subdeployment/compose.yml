@@ -167,15 +167,16 @@ services:
     networks:
       internal:
     volumes:
-      - "output:/data:rw"
+      - "output:/data/ares:ro"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ares.rule=PathPrefix(`/ares`)"
       - "traefik.http.services.ares.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.ares.headers.contentSecurityPolicy=default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; worker-src 'self';"
 
   aresindexer:
     # https://hub.docker.com/r/edence/ohdsi-aresindexer
-    image: edence/ohdsi-aresindexer
+    image: edence/ohdsi-aresindexer:12-Nov-2024
     restart: "no"
     depends_on:
       cdmdb:
@@ -201,6 +202,8 @@ services:
       VOCAB_SCHEMA: ${VOCAB_SCHEMA}
       ACHILLES_OUTPUT_FOLDER: "/output"
       ACHILLES_SMALL_CELL_COUNT: 0
+      RUN_MODE: "SOURCE"
+      ARES_DATA_ROOT: "/output"
     networks:
       internal:
     volumes:

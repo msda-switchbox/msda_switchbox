@@ -1,6 +1,6 @@
 services:
   switchbox:
-    image: edence/msdaswitchbox
+    image: ghcr.io/msda-switchbox/msda_switchbox:latest
     build:
       context: .
     volumes:
