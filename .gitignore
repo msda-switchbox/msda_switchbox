@@ -1,6 +1,5 @@
 *.log
 .DS_Store
-.github
 .mypy_cache
 .pytest_cache
 .python-version
