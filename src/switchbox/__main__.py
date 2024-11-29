@@ -22,10 +22,10 @@ def boot_switchbox(logger: logging.Logger, config: Config):
         project_name="switchbox",
         default_env={"TRAEFIK_PORT": str(config.port)},
     )
-    logger.info("starting ui")
-    c.up("ui")
-    logger.info("starting api")
-    c.up("api")
+
+    for service in ("ui", "api", "ares"):
+        logger.info("starting %s", service)
+        c.up(service)
     logger.info("background services started; exiting")
 
 
