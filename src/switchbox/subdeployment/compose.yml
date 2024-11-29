@@ -1,0 +1,217 @@
+name: switchbox
+
+# items beginning with x- are extensions for inclusion below
+x-stdenv: &stdenv
+  TZ: ${TZ}
+
+services:
+  ui:
+    # https://github.com/msda-switchbox/msda_switchbox_ui/pkgs/container/msda_switchbox_ui
+    image: ghcr.io/msda-switchbox/msda_switchbox_ui:latest
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_healthy
+    networks:
+      internal:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ui.rule=PathPrefix(`/`)"
+      - "traefik.http.services.ui.loadbalancer.server.port=8080"
+
+  api:
+    # https://github.com/msda-switchbox/msda_switchbox/pkgs/container/msda_switchbox
+    image: ghcr.io/msda-switchbox/msda_switchbox:latest
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_healthy
+    networks:
+      internal:
+    environment:
+      APIMODE: 1
+      LOG_LEVEL: DEBUG
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:rw"
+      - "data:/data:rw"
+
+  etl:
+    # https://github.com/msda-switchbox/msda_etl/pkgs/container/msda_etl
+    image: ghcr.io/msda-switchbox/msda_etl:latest
+    restart: "no"
+    depends_on:
+      cdmdb:
+        condition: service_healthy
+    environment:
+      <<: *stdenv
+      LOG_DIR: "/output/etl_logs"
+      DATADIR: "/data"
+      VOCAB_DIR: "/vocab"
+      VERBOSITY_LEVEL: "INFO"
+      INPUT_DELIMITER: ","
+      LOOKUP_DELIMITER: ";"
+      LOOKUP_STANDARD_CONCEPT_COL: "standard_concept_id"
+      RELOAD_VOCAB: False
+      RUN_INTEGRATION_TESTS: False
+      DB_DBMS: ${CDMDB_DBMS}
+      DB_HOST: ${CDMDB_SERVER}
+      DB_PORT: ${CDMDB_PORT}
+      DB_NAME: ${CDMDB_NAME}
+      DB_SCHEMA: ${CDM_SCHEMA}
+      DB_USERNAME: ${CDMDB_USERNAME}
+      DB_PASSWORD: ${CDMDB_PASSWORD}
+      DATE_FORMAT: "DDMONYYYY"
+      CDM_SOURCE_NAME: "TESTDATA"
+      CDM_SOURCE_ABBREVIATION: "TD"
+      CDM_HOLDER: "TEST FACILITY"
+      SOURCE_RELEASE_DATE: "31-12-23"
+      CDM_ETL_REF: "https://github.com/edencehealth/msda_etl/"
+      SOURCE_DESCRIPTION: ""
+      SOURCE_DOC_REFERENCE: ""
+    volumes:
+      - "data:/data:rw"
+      - "output:/output:rw"
+    networks:
+      internal:
+
+  cdmdb:
+    # https://github.com/msda-switchbox/msda_switchbox_db/pkgs/container/msda_switchbox_db
+    image: ghcr.io/msda-switchbox/msda_switchbox_db:latest
+    restart: unless-stopped
+    command:
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - max_connections=200
+      - -c
+      - max_wal_size=3GB
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2gb
+          pids: 150
+    environment:
+      <<: *stdenv
+      PGDATA: /data/pgdata
+      # the following two items are helpers for consumption by psql / pg_dump
+      PGDATABASE: ${CDMDB_NAME}
+      PGUSER: ${CDMDB_USERNAME}
+      POSTGRES_DB: ${CDMDB_NAME}
+      POSTGRES_PASSWORD: ${CDMDB_PASSWORD}
+      POSTGRES_USER: ${CDMDB_USERNAME}
+    healthcheck:
+      test:
+        - CMD
+        - /usr/local/bin/pg_isready
+      timeout: 5s
+      interval: 20s
+      retries: 5
+    networks:
+      default:
+      internal:
+    ports:
+      - "127.0.0.1:5432:5432"
+    shm_size: 2gb
+    volumes:
+      - "cdmdb:/data/"
+
+  traefik:
+    # https://hub.docker.com/_/traefik
+    image: traefik:v2.11
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=${COMPOSE_PROJECT_NAME}_internal
+      - --entrypoints.web.address=:8080
+      - --ping=true
+      - --ping.entryPoint=web
+      - --log.level=DEBUG
+      - --accesslog=true
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1gb
+          pids: 100
+    environment:
+      <<: *stdenv
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+        - CMD
+        - /usr/local/bin/traefik
+        - healthcheck
+        - --ping=true
+        - --ping.entryPoint=web
+        - --entrypoints.web.address=:8080
+      timeout: 5s
+    networks:
+      default:
+      internal:
+    ports:
+      - "127.0.0.1:${TRAEFIK_PORT}:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  ares:
+    # https://hub.docker.com/r/edence/ohdsi-ares
+    image: edence/ohdsi-ares
+    restart: unless-stopped
+    networks:
+      internal:
+    volumes:
+      - "output:/data:rw"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ares.rule=PathPrefix(`/ares`)"
+      - "traefik.http.services.ares.loadbalancer.server.port=8080"
+
+  aresindexer:
+    # https://hub.docker.com/r/edence/ohdsi-aresindexer
+    image: edence/ohdsi-aresindexer
+    restart: "no"
+    depends_on:
+      cdmdb:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "3"
+          memory: 4gb
+          pids: 150
+    environment:
+      <<: *stdenv
+      CDM_SCHEMA: ${CDM_SCHEMA}
+      CDM_VERSION: ${CDM_VERSION}
+      DB_DBMS: ${CDMDB_DBMS}
+      DB_HOSTNAME: ${CDMDB_SERVER}
+      DB_NAME: ${CDMDB_NAME}
+      DB_PASSWORD: ${CDMDB_PASSWORD}
+      DB_PORT: ${CDMDB_PORT}
+      DB_USERNAME: ${CDMDB_USERNAME}
+      RESULTS_SCHEMA: ${RESULTS_SCHEMA}
+      SOURCE_NAME: ${SOURCE_NAME}
+      VOCAB_SCHEMA: ${VOCAB_SCHEMA}
+      ACHILLES_OUTPUT_FOLDER: "/output"
+      ACHILLES_SMALL_CELL_COUNT: 0
+    networks:
+      internal:
+    volumes:
+      - "output:/output:rw"
+
+networks:
+  default:
+  internal:
+    internal: true
+
+volumes:
+  cdmdb:
+  data:
+  output:

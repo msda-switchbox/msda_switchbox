@@ -1,0 +1,125 @@
+params:
+  cdm_source_name:
+    question: What is your data's source name?
+    param_type: str
+  cdm_source_abbreviation:
+    question: What is the abbreviation of your data's source name?
+    param_type: str
+  cdm_holder:
+    question: Who is the owner of the source data?
+    param_type: str
+  source_release_date:
+    question: What is the release date of your source data?
+    param_type: str
+  input_delimiter:
+    question: What is the delimiter of your input files?
+    param_type: str
+    default: ";"
+  source_description:
+    question: Please give a short description of the CDM instance
+    param_type: str
+    default: ""
+  source_doc_reference:
+    question: Please link to the source data documentation
+    param_type: str
+    default: ""
+  comorbidities:
+    question: comorbidities source file
+    param_type: csv
+    columns:
+      - patient_id
+      - date_visit
+      - comorbidity
+      - com_type
+      - com_system
+  disease_history:
+    question: disease_history source file
+    param_type: csv
+    columns:
+      - patient_id
+      - date_visit
+      - date_diagnosis
+      - date_onset
+      - csf_olib
+      - ms_course
+  disease_status:
+    question: disease_status source file
+    param_type: csv
+    columns:
+      - patient_id
+      - date_visit
+      - ms_status_clin
+      - ms_status_pat
+      - edss_score
+      - pdds_score
+      - t25fw
+      - ninehpt_right
+      - ninehpt_left
+      - vib_sense
+      - sdmt
+  dmt:
+    question: dmt file
+    param_type: csv
+    columns:
+      - patient_id
+      - date_visit
+      - dmt_status
+      - dmt_type
+      - dmt_start
+      - dmt_stop
+      - dmt_stop_reas
+  mri:
+    question: mri source file
+    param_type: csv
+    columns:
+      - patient_id
+      - date_visit
+      - mri
+      - mri_region
+      - mri_date
+      - mri_gd_les
+      - mri_new_les_t1
+      - mri_new_les_t2
+  npt:
+    question: npt source file
+    param_type: csv
+    columns:
+      - patient_id
+      - date_visit
+      - np_treat_type
+      - np_treat_start
+      - np_treat_stop
+  patient:
+    question: patient source file
+    param_type: csv
+    columns:
+      - patient_id
+      - date_visit
+      - date_birth
+      - sex
+      - residence
+      - race_ethnicity
+      - education
+      - employment
+      - smoking
+      - smoking_count
+      - ms_family
+  relapses:
+    question: relapses source file
+    param_type: csv
+    columns:
+      - patient_id
+      - date_visit
+      - relapse
+      - date_relapse
+      - relapse_treat
+      - relapse_recovery
+  symptom:
+    question: symptom source file
+    param_type: csv
+    columns:
+      - patient_id
+      - date_visit
+      - current_symptom
+      - sever_symp
+      - treat_symp

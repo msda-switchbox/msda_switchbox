@@ -1,0 +1,13 @@
+**/__pycache__
+*.log
+.DS_Store
+.git
+.mypy_cache
+.pre-commit-config.yaml
+.pytest_cache
+.venv
+.vscode
+data
+log
+tests
+venv

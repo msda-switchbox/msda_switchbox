@@ -1,0 +1,12 @@
+*.log
+.DS_Store
+.github
+.mypy_cache
+.pytest_cache
+.python-version
+.venv
+.vscode
+Makefile
+__pycache__
+dev-scripts/
+venv

@@ -1,0 +1,13 @@
+bandit~=1.7.8
+black~=24.4.2
+bpython~=0.24
+flake8~=7.0.0
+isort~=5.13.2
+mypy~=1.10.0
+pre-commit~=3.7.1
+pycodestyle~=2.11.1
+pylint~=3.2.3
+pytest~=8.2.2
+ruff~=0.4.8
+types-docker~=7.1.0.20240601
+types-PyYAML~=6.0.12.20240311
