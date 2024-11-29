@@ -1,12 +1,7 @@
-name: docker image
+name: Docker
 
 on:
   pull_request:
-    types:
-      - opened
-      - reopened
-      - edited
-      - synchronize
     branches:
       - main
   push:
@@ -16,11 +11,13 @@ on:
       - "*.*.*"
 
 jobs:
-  dockerimage:
+  # https://github.com/edencehealth/workflows
+  image:
     uses: edencehealth/workflows/.github/workflows/dockerimage.yml@v1
+    permissions:
+      packages: write
     with:
       container_name: msda_switchbox
       dockerhub_org: ""
-      context_path: .
       push_readme: README.md
     secrets: inherit
