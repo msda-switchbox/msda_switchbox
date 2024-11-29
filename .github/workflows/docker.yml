@@ -13,13 +13,14 @@ on:
     branches:
       - main
     tags:
-      - '*.*.*'
+      - "*.*.*"
 
 jobs:
   dockerimage:
     uses: edencehealth/workflows/.github/workflows/dockerimage.yml@v1
     with:
       container_name: msda_switchbox
+      dockerhub_org: ""
       context_path: .
       push_readme: README.md
     secrets: inherit
